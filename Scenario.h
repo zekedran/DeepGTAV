@@ -25,9 +25,10 @@ private:
 	Player player = NULL;
 	Ped ped = NULL;
 	Cam camera = NULL;
-	Vector3 dir;
+	Vector3 dir, dest;
 
 	float x, y;
+	float x2, y2;
 	int hour, minute;
 	const char* _weather;
 	const char* _vehicle;
@@ -45,6 +46,7 @@ private:
 	bool yawRate;
 	bool drivingMode; //TODO
 	bool location;
+	bool wander;
 	bool time;
 
 	float currentThrottle = 0.0;

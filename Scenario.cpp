@@ -12,10 +12,14 @@ char* Scenario::vehicleList[3] = { "blista", "voltic", "packer" };
 
 void Scenario::parseScenarioConfig(const Value& sc, bool setDefaults) {
 	const Value& location = sc["location"];
+	const Value& destination = sc["destination"];
 	const Value& time = sc["time"];
 	const Value& weather = sc["weather"];
 	const Value& vehicle = sc["vehicle"];
 	const Value& drivingMode = sc["drivingMode"];
+	
+	if (!sc["wander"].IsNull()) wander = sc["wander"].GetBool();
+	else if (setDefaults) wander = _WANDER_;
 
 	if (location.IsArray()) {
 		if (!location[0].IsNull()) x = location[0].GetFloat();
@@ -27,6 +31,18 @@ void Scenario::parseScenarioConfig(const Value& sc, bool setDefaults) {
 	else if (setDefaults) {
 		x = 5000 * ((float)rand() / RAND_MAX) - 2500;
 		y = 8000 * ((float)rand() / RAND_MAX) - 2000;
+	}
+
+	if (destination.IsArray()) {
+		if (!destination[0].IsNull()) x2 = destination[0].GetFloat();
+		else if (setDefaults) x2 = 5000 * ((float)rand() / RAND_MAX) - 2500;
+
+		if (!destination[1].IsNull()) y2 = destination[1].GetFloat();
+		else if (setDefaults) y2 = 8000 * ((float)rand() / RAND_MAX) - 2000;
+	}
+	else if (setDefaults) {
+		x2 = 5000 * ((float)rand() / RAND_MAX) - 2500;
+		y2 = 8000 * ((float)rand() / RAND_MAX) - 2000;
 	}
 
 	if (time.IsArray()) {
@@ -83,17 +99,7 @@ void Scenario::parseDatasetConfig(const Value& dc, bool setDefaults) {
 	if (!dc["trafficSigns"].IsNull()) trafficSigns = dc["trafficSigns"].GetBool();
 	else if (setDefaults) trafficSigns = _TRAFFIC_SIGNS_;
 
-	if (!dc["direction"].IsNull()) {
-		direction = true;
-		if (!dc["direction"][0].IsNull()) dir.x = dc["direction"][0].GetFloat();
-		else if (setDefaults) direction = _DIRECTION_;
-
-		if (!dc["direction"][1].IsNull()) dir.y = dc["direction"][1].GetFloat();
-		else if (setDefaults) direction = _DIRECTION_;
-
-		if (!dc["direction"][2].IsNull()) dir.z = dc["direction"][2].GetFloat();
-		else if (setDefaults) direction = _DIRECTION_;
-	}
+	if (!dc["direction"].IsNull()) direction = dc["direction"].GetBool();
 	else if (setDefaults) direction = _DIRECTION_;
 
 	if (dc["reward"].IsArray()) {
@@ -147,11 +153,12 @@ void Scenario::parseDatasetConfig(const Value& dc, bool setDefaults) {
 void Scenario::buildScenario() {
 	Vector3 pos, rotation;
 	Hash vehicleHash;
-	float heading;
+	float heading, heading2;
 
 	GAMEPLAY::SET_RANDOM_SEED(std::time(NULL));
 	while (!PATHFIND::_0xF7B79A50B905A30D(-8192.0f, 8192.0f, -8192.0f, 8192.0f)) WAIT(0);
 	PATHFIND::GET_CLOSEST_VEHICLE_NODE_WITH_HEADING(x, y, 0, &pos, &heading, 0, 0, 0);
+	PATHFIND::GET_CLOSEST_VEHICLE_NODE_WITH_HEADING(x2, y2, 0, &dest, &heading2, 0, 0, 0);
 
 	ENTITY::DELETE_ENTITY(&vehicle);
 	vehicleHash = GAMEPLAY::GET_HASH_KEY((char*)_vehicle);
@@ -191,7 +198,15 @@ void Scenario::buildScenario() {
 	CAM::RENDER_SCRIPT_CAMS(TRUE, FALSE, 0, TRUE, TRUE);
 
 	AI::CLEAR_PED_TASKS(ped);
-	if (_drivingMode >= 0) AI::TASK_VEHICLE_DRIVE_WANDER(ped, vehicle, _setSpeed, _drivingMode);
+	if (!wander && _drivingMode >= 0) {
+		float blipRadius = 20.0;
+		Blip destBlip = UI::ADD_BLIP_FOR_RADIUS(dest.x, dest.y, dest.z, blipRadius);
+		UI::SET_BLIP_COLOUR(destBlip, 27);
+		UI::SET_BLIP_ROUTE(destBlip, true);
+		UI::SET_BLIP_ROUTE_COLOUR(destBlip, 27);
+		AI::TASK_VEHICLE_DRIVE_TO_COORD_LONGRANGE(ped, vehicle, dest.x, dest.y, dest.z, _setSpeed, _drivingMode, blipRadius);
+	}
+	else if (_drivingMode >= 0) AI::TASK_VEHICLE_DRIVE_WANDER(ped, vehicle, _setSpeed, _drivingMode);
 }
 
 void Scenario::start(const Value& sc, const Value& dc) {
@@ -615,7 +630,7 @@ void Scenario::setDirection(){
 	float distance;
 	Vehicle temp_vehicle;
 	Document::AllocatorType& allocator = d.GetAllocator();
-	PATHFIND::GENERATE_DIRECTIONS_TO_COORD(dir.x, dir.y, dir.z, TRUE, &direction, &temp_vehicle, &distance);
+	PATHFIND::GENERATE_DIRECTIONS_TO_COORD(dest.x, dest.y, dest.z, TRUE, &direction, &temp_vehicle, &distance);
 	Value _direction(kArrayType);
 	_direction.PushBack(direction, allocator).PushBack(distance, allocator);
 	d["direction"] = _direction;

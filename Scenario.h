@@ -26,6 +26,7 @@ private:
 	Ped ped = NULL;
 	Cam camera = NULL;
 	Vector3 dir, dest;
+	Blip destBlip;
 
 	float x, y;
 	float x2, y2;

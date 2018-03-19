@@ -200,7 +200,7 @@ void Scenario::buildScenario() {
 	AI::CLEAR_PED_TASKS(ped);
 	if (!wander && _drivingMode >= 0) {
 		float blipRadius = 20.0;
-		Blip destBlip = UI::ADD_BLIP_FOR_RADIUS(dest.x, dest.y, dest.z, blipRadius);
+		destBlip = UI::ADD_BLIP_FOR_RADIUS(dest.x, dest.y, dest.z, blipRadius);
 		UI::SET_BLIP_COLOUR(destBlip, 27);
 		UI::SET_BLIP_ROUTE(destBlip, true);
 		UI::SET_BLIP_ROUTE_COLOUR(destBlip, 27);
@@ -242,6 +242,7 @@ void Scenario::config(const Value& sc, const Value& dc) {
 }
 
 void Scenario::run() {
+	float count = 0;
 	if (running) {
 		std::clock_t now = std::clock();
 
@@ -280,6 +281,10 @@ void Scenario::run() {
 			// Driving characteristics
 			PED::SET_DRIVER_AGGRESSIVENESS(ped, 0.0);
 			PED::SET_DRIVER_ABILITY(ped, 100.0);
+
+			// Ensure map is shown
+			UI::SET_BLIP_ROUTE(destBlip, true);
+			UI::SET_BLIP_ROUTE_COLOUR(destBlip, 27);
 		}
 	}
 	scriptWait(0);
@@ -292,6 +297,8 @@ void Scenario::stop() {
 	CAM::RENDER_SCRIPT_CAMS(FALSE, TRUE, 500, FALSE, FALSE);
 	AI::CLEAR_PED_TASKS(ped);
 	setCommands(0.0, 0.0, 0.0);
+	if(UI::DOES_BLIP_EXIST(destBlip)) 
+		UI::REMOVE_BLIP(&destBlip);
 }
 
 void Scenario::setCommands(float throttle, float brake, float steering) {

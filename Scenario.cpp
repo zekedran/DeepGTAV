@@ -66,7 +66,7 @@ void Scenario::parseScenarioConfig(const Value& sc, bool setDefaults) {
 	if (drivingMode.IsArray()) {
 		if (!drivingMode[0].IsNull()) _drivingMode = drivingMode[0].GetInt();
 		else if (setDefaults)  _drivingMode = rand() % 4294967296;
-		if (drivingMode[1].IsNull()) _setSpeed = drivingMode[1].GetFloat(); 
+		if (!drivingMode[1].IsNull()) _setSpeed = drivingMode[1].GetFloat(); 
 		else if (setDefaults) _setSpeed = 1.0*(rand() % 20);
 	}
 	else if (setDefaults) {
